@@ -88,7 +88,7 @@ $STD apt-get install -y git
 msg_ok "Installed Dependencies"
 
 msg_info "Setting up Domoticz"
-$STD bash -c "$(curl -sSfL https://install.domoticz.com)"
+bash -c "$(curl -sSfL https://install.domoticz.com)"
 msg_ok "Set up Domoticz"
 
 if [[ "${SSH_ROOT}" == "yes" ]]; then
