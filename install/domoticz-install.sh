@@ -81,6 +81,12 @@ $STD apt-get update
 $STD apt-get -y upgrade
 msg_ok "Updated Container OS"
 
+msg_info "Installing Dependencies"
+$STD apt-get install -y curl
+$STD apt-get install -y sudo
+$STD apt-get install -y git
+msg_ok "Installed Dependencies"
+
 msg_info "Setting up Domoticz"
 $STD bash -c "$(curl -sSfL https://install.domoticz.com)"
 msg_ok "Set up Domoticz"
