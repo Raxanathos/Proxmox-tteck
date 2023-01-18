@@ -83,28 +83,51 @@ msg_ok "Updated Container OS"
 msg_info "Installing Dependencies"
 $STD apt-get install -y curl
 $STD apt-get install -y sudo
-$STD apt-get install -y pip
 msg_ok "Installed Dependencies"
 
-msg_info "Installing Change Detection"
-mkdir /opt/changedetection
-$STD pip3 install changedetection.io
-$STD python3 -m pip install dnspython==2.2.1
-msg_ok "Installed Change Detection"
+msg_info "Installing pip3"
+$STD apt-get install -y python3-pip
+msg_ok "Installed pip3"
+
+msg_info "Installing Deluge"
+$STD pip install deluge[all]
+$STD pip install lbry-libtorrent
+msg_ok "Installed Deluge"
 
 msg_info "Creating Service"
-cat <<EOF >/etc/systemd/system/changedetection.service
-[Unit]
-Description=Change Detection
+service_path="/etc/systemd/system/deluged.service"
+echo "[Unit]
+Description=Deluge Bittorrent Client Daemon
+Documentation=man:deluged
 After=network-online.target
+
 [Service]
 Type=simple
-WorkingDirectory=/opt/changedetection
-ExecStart=changedetection.io -d /opt/changedetection -p 5000
+UMask=007
+ExecStart=/usr/local/bin/deluged -d
+Restart=on-failure
+TimeoutStopSec=300
+
 [Install]
-WantedBy=multi-user.target
-EOF
-$STD systemctl enable --now changedetection
+WantedBy=multi-user.target" >$service_path
+
+service_path="/etc/systemd/system/deluge-web.service"
+echo "[Unit]
+Description=Deluge Bittorrent Client Web Interface
+Documentation=man:deluge-web
+After=deluged.service
+Wants=deluged.service
+
+[Service]
+Type=simple
+UMask=027
+ExecStart=/usr/local/bin/deluge-web -d
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target" >$service_path
+systemctl enable --now -q deluged.service
+systemctl enable --now -q deluge-web.service
 msg_ok "Created Service"
 
 PASS=$(grep -w "root" /etc/shadow | cut -b6)

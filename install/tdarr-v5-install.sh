@@ -83,28 +83,62 @@ msg_ok "Updated Container OS"
 msg_info "Installing Dependencies"
 $STD apt-get install -y curl
 $STD apt-get install -y sudo
-$STD apt-get install -y pip
+$STD apt-get install -y unzip
 msg_ok "Installed Dependencies"
 
-msg_info "Installing Change Detection"
-mkdir /opt/changedetection
-$STD pip3 install changedetection.io
-$STD python3 -m pip install dnspython==2.2.1
-msg_ok "Installed Change Detection"
+msg_info "Installing Tdarr"
+mkdir -p /opt/tdarr
+cd /opt/tdarr
+wget -q https://f000.backblazeb2.com/file/tdarrs/versions/2.00.15/linux_x64/Tdarr_Updater.zip
+$STD unzip Tdarr_Updater.zip
+chmod +x Tdarr_Updater
+$STD ./Tdarr_Updater
+msg_ok "Installed Tdarr"
 
 msg_info "Creating Service"
-cat <<EOF >/etc/systemd/system/changedetection.service
-[Unit]
-Description=Change Detection
-After=network-online.target
+service_path="/etc/systemd/system/tdarr-server.service"
+echo "[Unit]
+Description=Tdarr Server Daemon
+After=network.target
+# Enable if using ZFS, edit and enable if other FS mounting is required to access directory
+#Requires=zfs-mount.service
+
 [Service]
+User=root
+Group=root
+
 Type=simple
-WorkingDirectory=/opt/changedetection
-ExecStart=changedetection.io -d /opt/changedetection -p 5000
+WorkingDirectory=/opt/tdarr/Tdarr_Server
+ExecStartPre=/opt/tdarr/Tdarr_Updater                  
+ExecStart=/opt/tdarr/Tdarr_Server/Tdarr_Server
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+
 [Install]
-WantedBy=multi-user.target
-EOF
-$STD systemctl enable --now changedetection
+WantedBy=multi-user.target" >$service_path
+
+service_path="/etc/systemd/system/tdarr-node.service"
+echo "[Unit]
+Description=Tdarr Node Daemon
+After=network.target
+Requires=tdarr-server.service
+
+[Service]
+User=root
+Group=root
+
+Type=simple
+WorkingDirectory=/opt/tdarr/Tdarr_Node
+ExecStart=/opt/tdarr/Tdarr_Node/Tdarr_Node
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target" >$service_path
+systemctl enable --now -q tdarr-server.service
+systemctl enable --now -q tdarr-node.service
 msg_ok "Created Service"
 
 PASS=$(grep -w "root" /etc/shadow | cut -b6)
@@ -129,6 +163,7 @@ if [[ "${SSH_ROOT}" == "yes" ]]; then
 fi
 
 msg_info "Cleaning up"
+rm -rf Tdarr_Updater.zip
 $STD apt-get autoremove
 $STD apt-get autoclean
 msg_ok "Cleaned"

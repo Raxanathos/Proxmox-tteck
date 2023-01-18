@@ -83,28 +83,32 @@ msg_ok "Updated Container OS"
 msg_info "Installing Dependencies"
 $STD apt-get install -y curl
 $STD apt-get install -y sudo
+$STD apt-get install -y unzip
 $STD apt-get install -y pip
 msg_ok "Installed Dependencies"
 
-msg_info "Installing Change Detection"
-mkdir /opt/changedetection
-$STD pip3 install changedetection.io
-$STD python3 -m pip install dnspython==2.2.1
-msg_ok "Installed Change Detection"
+msg_info "Installing Homer"
+mkdir -p /opt/homer
+cd /opt/homer
+wget -q https://github.com/bastienwirtz/homer/releases/latest/download/homer.zip
+$STD unzip homer.zip
+rm -rf homer.zip
+cp assets/config.yml.dist assets/config.yml
+msg_ok "Installed Homer"
 
 msg_info "Creating Service"
-cat <<EOF >/etc/systemd/system/changedetection.service
+cat <<EOF >/etc/systemd/system/homer.service
 [Unit]
-Description=Change Detection
+Description=Homer Dashboard
 After=network-online.target
 [Service]
 Type=simple
-WorkingDirectory=/opt/changedetection
-ExecStart=changedetection.io -d /opt/changedetection -p 5000
+WorkingDirectory=/opt/homer
+ExecStart=python3 -m http.server 8010
 [Install]
 WantedBy=multi-user.target
 EOF
-$STD systemctl enable --now changedetection
+$STD systemctl enable --now homer
 msg_ok "Created Service"
 
 PASS=$(grep -w "root" /etc/shadow | cut -b6)
