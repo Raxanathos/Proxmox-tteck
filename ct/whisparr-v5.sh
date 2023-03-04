@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
+
+# Copyright (c) 2021-2023 tteck
+# Author: tteck (tteckster)
+# License: MIT
+# https://github.com/tteck/Proxmox/raw/main/LICENSE
+
 function header_info {
-  cat <<"EOF"
+clear
+cat <<"EOF"
+
  _       ____    _                           
 | |     / / /_  (_)________  ____v5__________
 | | /| / / __ \/ / ___/ __ \/ __ `/ ___/ ___/
@@ -10,7 +18,6 @@ function header_info {
  
 EOF
 }
-clear
 header_info
 echo -e "Loading..."
 APP="Whisparr"
@@ -33,20 +40,14 @@ BFR="\\r\\033[K"
 HOLD="-"
 CM="${GN}✓${CL}"
 CROSS="${RD}✗${CL}"
-set -o errexit
-set -o errtrace
-set -o nounset
-set -o pipefail
-shopt -s expand_aliases
-alias die='EXIT=$? LINE=$LINENO error_exit'
-trap die ERR
-function error_exit() {
-  trap - ERR
-  local reason="Unknown failure occurred."
-  local msg="${1:-$reason}"
-  local flag="${RD}‼ ERROR ${CL}$EXIT@$LINE"
-  echo -e "$flag $msg" 1>&2
-  exit $EXIT
+set -Eeuo pipefail
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+function error_handler() {
+  local exit_code="$?"
+  local line_number="$1"
+  local command="$2"
+  local error_message="${RD}[ERROR]${CL} in line ${RD}$line_number${CL}: exit code ${RD}$exit_code${CL}: while executing command ${YW}$command${CL}"
+  echo -e "\n$error_message\n"
 }
 
 function msg_info() {
@@ -60,38 +61,27 @@ function msg_ok() {
 }
 
 function msg_error() {
-    local msg="$1"
-    echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
+  local msg="$1"
+  echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
 }
 
 function PVE_CHECK() {
-  PVE=$(pveversion | grep "pve-manager/7" | wc -l)
-  if [[ $PVE != 1 ]]; then
-    echo -e "${RD}This script requires Proxmox Virtual Environment 7.0 or greater${CL}"
-    echo -e "Exiting..."
-    sleep 2
-    exit
-  fi
+if [ $(pveversion | grep -c "pve-manager/7\.[0-9]") -eq 0 ]; then
+  echo -e "${CROSS} This version of Proxmox Virtual Environment is not supported"
+  echo -e "Requires PVE Version 7.0 or higher"
+  echo -e "Exiting..."
+  sleep 2
+exit
+fi
 }
-
-if command -v pveversion >/dev/null 2>&1; then
-  if (whiptail --title "${APP} LXC" --yesno "This will create a New ${APP} LXC. Proceed?" 10 58); then
-    NEXTID=$(pvesh get /cluster/nextid)
-  else
-    clear
-    echo -e "⚠ User exited script \n"
-    exit
-  fi
+function ARCH_CHECK() {
+if [ "$(dpkg --print-architecture)" != "amd64" ]; then
+  echo -e "\n ${CROSS} This script will not work with PiMox! \n"
+  echo -e "Exiting..."
+  sleep 2
+exit
 fi
-if ! command -v pveversion >/dev/null 2>&1; then
-  if (whiptail --title "${APP} LXC UPDATE" --yesno "This will update ${APP} LXC.  Proceed?" 10 58); then
-    echo "User selected Update"
-    else
-    clear
-    echo -e "⚠ User exited script \n"
-    exit
-  fi
-fi
+}
 
 function default_settings() {
   echo -e "${DGN}Using Container Type: ${BGN}Unprivileged${CL} ${RD}NO DEVICE PASSTHROUGH${CL}"
@@ -114,6 +104,8 @@ function default_settings() {
   NET=dhcp
   echo -e "${DGN}Using Gateway Address: ${BGN}Default${CL}"
   GATE=""
+  echo -e "${DGN}Disable IPv6: ${BGN}No${CL}"
+  DISABLEIP6="no"
   echo -e "${DGN}Using Interface MTU Size: ${BGN}Default${CL}"
   MTU=""
   echo -e "${DGN}Using DNS Search Domain: ${BGN}Host${CL}"
@@ -128,7 +120,6 @@ function default_settings() {
   SSH="no"
   echo -e "${DGN}Enable Verbose Mode: ${BGN}No${CL}"
   VERB="no"
-  VERB2="silent"
   echo -e "${BL}Creating a ${APP} LXC using the above default settings${CL}"
 }
 function advanced_settings() {
@@ -225,6 +216,13 @@ function advanced_settings() {
       echo -e "${DGN}Using Gateway IP Address: ${BGN}$GATE1${CL}"
     fi
   fi
+  if (whiptail --defaultno --title "IPv6" --yesno "Disable IPv6?" 10 58); then
+      echo -e "${DGN}Disable IPv6: ${BGN}Yes${CL}"
+      DISABLEIP6="yes"
+  else
+      echo -e "${DGN}Disable IPv6: ${BGN}No${CL}"
+      DISABLEIP6="no"
+  fi
   MTU1=$(whiptail --inputbox "Set Interface MTU Size (leave blank for default)" 8 58 --title "MTU SIZE" --cancel-button Exit-Script 3>&1 1>&2 2>&3)
   exitstatus=$?
   if [ $exitstatus = 0 ]; then
@@ -292,11 +290,9 @@ function advanced_settings() {
   if (whiptail --defaultno --title "VERBOSE MODE" --yesno "Enable Verbose Mode?" 10 58); then
       echo -e "${DGN}Enable Verbose Mode: ${BGN}Yes${CL}"
       VERB="yes"
-      VERB2=""
   else
       echo -e "${DGN}Enable Verbose Mode: ${BGN}No${CL}"
       VERB="no"
-      VERB2="silent"
   fi
   if (whiptail --title "ADVANCED SETTINGS COMPLETE" --yesno "Ready to create ${APP} LXC?" --no-button Do-Over 10 58); then
     echo -e "${RD}Creating a ${APP} LXC using the above advanced settings${CL}"
@@ -308,6 +304,10 @@ function advanced_settings() {
   fi
 }
 function install_script() {
+ARCH_CHECK
+PVE_CHECK
+NEXTID=$(pvesh get /cluster/nextid)
+header_info
   if (whiptail --title "SETTINGS" --yesno "Use Default Settings?" --no-button Advanced 10 58); then
     header_info
     echo -e "${BL}Using Default Settings${CL}"
@@ -320,16 +320,37 @@ function install_script() {
 }
 
 function update_script() {
-clear
 header_info
-msg_info "Updating Debian LXC"
+msg_info "Updating $APP LXC"
 apt-get update &>/dev/null
 apt-get -y upgrade &>/dev/null
-msg_ok "Updated Debian LXC"
+msg_ok "Updated $APP LXC"
 exit
 }
-clear
-if ! command -v pveversion >/dev/null 2>&1; then update_script; else install_script; fi
+
+if command -v pveversion >/dev/null 2>&1; then
+  if ! (whiptail --title "${APP} LXC" --yesno "This will create a New ${APP} LXC. Proceed?" 10 58); then
+    clear
+    echo -e "⚠  User exited script \n"
+    exit
+  fi
+  install_script
+fi
+
+if ! command -v pveversion >/dev/null 2>&1 && [[ ! -d /var/lib/whisparr ]]; then
+  msg_error "No ${APP} Installation Found!"
+  exit 
+fi
+
+if ! command -v pveversion >/dev/null 2>&1; then
+  if ! (whiptail --title "${APP} LXC UPDATE" --yesno "This will update ${APP} LXC.  Proceed?" 10 58); then
+    clear
+    echo -e "⚠  User exited script \n"
+    exit
+  fi
+  update_script
+fi
+
 if [ "$VERB" == "yes" ]; then set -x; fi
 if [ "$CT_TYPE" == "1" ]; then
   FEATURES="nesting=1,keyctl=1"
@@ -338,8 +359,9 @@ else
 fi
 TEMP_DIR=$(mktemp -d)
 pushd $TEMP_DIR >/dev/null
+export DISABLEIPV6=$DISABLEIP6
+export APPLICATION=$APP
 export VERBOSE=$VERB
-export STD=$VERB2
 export SSH_ROOT=${SSH}
 export CTID=$CT_ID
 export PCT_OSTYPE=$var_os
@@ -362,7 +384,7 @@ msg_info "Starting LXC Container"
 pct start $CTID
 msg_ok "Started LXC Container"
 lxc-attach -n $CTID -- bash -c "$(wget -qLO - https://raw.githubusercontent.com/tteck/Proxmox/main/install/$var_install.sh)" || exit
-IP=$(pct exec $CTID ip a s dev eth0 | sed -n '/inet / s/\// /p' | awk '{print $2}')
+IP=$(pct exec $CTID ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
 pct set $CTID -description "# ${APP} LXC
 ### https://tteck.github.io/Proxmox/
 <a href='https://ko-fi.com/D1D7EP4GF'><img src='https://img.shields.io/badge/☕-Buy me a coffee-red' /></a>"

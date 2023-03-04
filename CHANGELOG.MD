@@ -1,7 +1,139 @@
 <a href="https://tteck.github.io/Proxmox/"><img src="https://github-readme-stats-git-masterrstaa-rickstaa.vercel.app/api?username=tteck&theme=blue-green" height="130"/></a>
-
 # Change Log
 All notable changes to this project will be documented in this file.
+
+## 2023-02-24
+
+### Changed
+
+- **qBittorrent LXC** (Thanks @romka777)
+  - NEW Script
+- **Jackett LXC** (Thanks @romka777)
+  - NEW Script
+
+## 2023-02-23
+
+### Changed
+
+- **Proxmox LXC Updater** 
+  - Skip all templates, allowing for the starting, updating, and shutting down of containers to be resumed automatically.
+  - Exclude an additional container by adding the CTID at the end of the shell command ( -s 103).
+
+## 2023-02-16
+
+### Changed
+
+- **RSTPtoWEB LXC** 
+  - NEW Script
+- **go2rtc LXC** 
+  - NEW Script
+
+## 2023-02-12
+
+### Changed
+
+- **OliveTin** 
+  - NEW Script
+
+## 2023-02-10
+
+### Changed
+
+- **Home Assistant OS VM** 
+  - Code Refactoring
+
+## 2023-02-05
+
+### Changed
+
+- **Devuan LXC** 
+  - NEW Script
+
+## 2023-02-02
+
+### Changed
+
+- **Audiobookshelf LXC** 
+  - NEW Script
+- **Rocky Linux LXC** 
+  - NEW Script
+
+## 2023-01-28
+
+### Changed
+
+- **LXC Cleaner** 
+  - Code refactoring to give the user the option to choose whether cache or logs will be deleted for each app/service.
+  - Leaves directory structure intact
+
+## 2023-01-27
+
+### Changed
+
+- **LXC Cleaner** 
+  - NEW Script
+
+## 2023-01-26
+
+### Changed
+
+- **ALL LXC's** 
+  - Add an option to disable IPv6 (Advanced)
+
+## 2023-01-25
+
+### Changed
+
+- **Home Assistant OS VM** 
+  - switch to v5
+  - add an option to set MTU size (Advanced)
+  - add arch check (no ARM64) (issue from community.home-assistant.io)
+  - add check to insure VMID isn't already used before VM creation (Advanced) (issue from forum.proxmox.com)
+  - code refactoring
+- **PiMox Home Assistant OS VM** 
+  - switch to v5
+  - add an option to set MTU size (Advanced)
+  - add arch check (no AMD64)
+  - add pve check (=>7.2)
+  - add check to insure VMID isn't already used before VM creation (Advanced)
+  - code refactoring
+- **All LXC's** 
+  - add arch check (no ARM64) (issue from forum.proxmox.com)
+
+## 2023-01-24
+
+### Changed
+
+- **Transmission LXC** 
+  - NEW Script
+
+## 2023-01-23
+
+### Changed
+
+- **ALL LXC's** 
+  - Add [Midnight Commander (mc)](https://www.linuxcommand.org/lc3_adv_mc.php)
+
+## 2023-01-22
+
+### Changed
+
+- **Autobrr LXC** 
+  - NEW Script
+
+## 2023-01-21
+
+### Changed
+
+- **Kavita LXC** 
+  - NEW Script
+
+## 2023-01-19
+
+### Changed
+
+- **SABnzbd LXC** 
+  - NEW Script
 
 ## 2023-01-17
 
