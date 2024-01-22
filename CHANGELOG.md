@@ -1,8 +1,450 @@
-<a href="https://tteck.github.io/Proxmox/"><img src="https://github-readme-stats-git-masterrstaa-rickstaa.vercel.app/api?username=tteck&theme=blue-green" height="130"/></a>
-# Change Log
-**All notable changes to this project will be documented in this file.**<br>
+<div align="center">
+<img src="https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo.png" height="100px" />
+</div>
+<h1 align="center">Change Log</h1>
+
+<h3 align="center">All notable changes to this project will be documented in this file.</h3>
 
 - All LXC instances created using this repository come pre-installed with Midnight Commander, which is a command-line tool (`mc`) that offers a user-friendly file and directory management interface for the terminal environment.
+
+## 2024-01-20
+
+### Changed
+
+- **Apache-Cassandra LXC**
+  - NEW Script
+- **Redis LXC**
+  - NEW Script
+
+## 2024-01-17
+
+### Changed
+
+- **ntfy LXC**
+  - NEW Script
+- **HyperHDR LXC**
+  - NEW Script
+
+## 2024-01-16
+
+### Changed
+
+- **Website Improvements**
+  - Refine and correct pointers.
+  - Change hover colors to intuitively indicate categories/items.
+  - Implement opening links in new tabs for better navigation.
+  - Enhance the Copy button to better indicate that the command has been successfully copied.
+  - Introduce a Clear Search button.
+  - While not directly related to the website, it's worth mentioning that the logo in newly created LXC notes now serves as a link to the website, conveniently opening in a new tab.
+
+## 2024-01-12
+
+### Changed
+
+- **Apt-Cacher-NG LXC**
+  - NEW Script
+- **New Feature**
+  - The option to utilize Apt-Cacher-NG (Advanced settings) when creating LXCs. The added functionality is expected to decrease bandwidth usage and expedite package installation and updates. https://github.com/tteck/Proxmox/discussions/2332
+
+## 2024-01-09
+
+### Changed
+
+- **Verbose mode**
+  - Only entries with `$STD` will be shown
+
+## 2024-01-07
+
+### Changed
+
+- **Stirling-PDF LXC**
+  - NEW Script
+- **SFTPGo LXC**
+  - NEW Script
+
+## 2024-01-04
+
+### Changed
+
+- **CommaFeed LXC**
+  - NEW Script
+
+## 2024-01-03
+
+### Changed
+
+- **Sonarr LXC**
+  - Breaking Change
+  - Complete recode
+  - https://github.com/tteck/Proxmox/discussions/1738#discussioncomment-8005107
+
+## 2024-01-01
+
+### Changed
+
+- **Gotify LXC**
+  - NEW Script
+
+## 2023-12-19
+
+### Changed
+
+- **Proxmox VE Netdata**
+  - NEW Script
+
+## 2023-12-10
+
+### Changed
+
+- **Homarr LXC**
+  - Removed, again.
+
+## 2023-12-02
+
+### Changed
+
+- **Runtipi LXC**
+  - NEW Script
+
+## 2023-12-01
+
+### Changed
+
+- **Mikrotik RouterOS VM**
+  - Now Mikrotik RouterOS CHR VM
+  - code refactoring
+  - update to CHR
+  - thanks to @NiccyB
+- **Channels DVR Server LXC**
+  - NEW Script
+
+## 2023-11-19
+
+### Changed
+
+- **Dockge LXC**
+  - NEW Script
+
+## 2023-11-18
+
+### Changed
+
+- **Ubuntu 22.04 VM**
+  - NEW Script
+
+## 2023-11-14
+
+### Changed
+
+- **TurnKey Nextcloud VM**
+  - NEW Script
+- **TurnKey ownCloud VM**
+  - NEW Script
+
+## 2023-11-11
+
+### Changed
+
+- **Homarr LXC**
+  - Returns with v0.14.0 (The authentication update).
+
+## 2023-11-9
+
+### Changed
+
+- **AgentDVR LXC**
+  - NEW Script
+
+## 2023-11-8
+
+### Changed
+
+- **Linkwarden LXC**
+  - NEW Script
+
+## 2023-11-2
+
+### Changed
+
+- **PhotoPrism LXC**
+  - Transitioned to PhotoPrism's latest installation package, featuring Linux binaries.
+
+## 2023-11-1
+
+### Changed
+
+- **Owncast LXC**
+  - NEW Script
+
+## 2023-10-31
+
+### Changed
+
+- **Debian 12 VM**
+  - NEW Script
+
+## 2023-10-29
+
+### Changed
+
+- **Unmanic LXC**
+  - NEW Script
+
+## 2023-10-27
+
+### Changed
+
+- **Webmin**
+  - A full code overhaul.
+
+## 2023-10-15
+
+### Changed
+
+- **TasmoAdmin LXC**
+  - NEW Script
+
+## 2023-10-14
+
+### Changed
+
+- **Sonarr LXC**
+  - Include an option to install v4 (experimental)
+
+## 2023-10-11
+
+### Changed
+
+- **Proxmox VE CPU Scaling Governor**
+  - A full code overhaul.
+  - Include an option to configure a crontab for ensuring that the CPU Scaling Governor configuration persists across reboots.
+
+## 2023-10-08
+
+### Changed
+
+- **Proxmox VE LXC Updater**
+  - Now displays which containers require a reboot.
+- **File Browser**
+  - Uninstall by re-executing the script
+  - Option to use No Authentication
+
+## 2023-10-05
+
+### Changed
+
+- **Pingvin Share LXC**
+  - NEW Script
+
+## 2023-09-30
+
+### Changed
+
+- **All Templates**
+  - NEW Script
+
+## 2023-09-28
+
+### Changed
+
+- **Alpine Nextcloud Hub LXC**
+  - NEW Script (Thanks to @nicedevil007)
+
+## 2023-09-14
+
+### Changed
+
+- **Proxmox VE Processor Microcode**
+  - Allow users to select available microcode packages.
+
+## 2023-09-13
+
+### Changed
+
+- **Pi.Alert LXC**
+  - NEW Script
+- **Proxmox VE Kernel Clean**
+  - Code overhaul with a fresh start. This script offers the flexibility to select specific kernels for removal, unlike the previous version, which was an all-or-nothing approach.
+
+## 2023-09-11
+
+### Changed
+
+- **Paperless-ngx LXC**
+  - Modify the script to incorporate Redis and PostgreSQL, while also introducing an option to include Adminer during installation.
+
+## 2023-09-10
+
+### Changed
+
+- **TurnKey Game Server LXC**
+  - NEW Script
+
+## 2023-09-09
+
+### Changed
+
+- **Proxmox VE Host Backup**
+  - Users are now able to specify both the backup path and the directory in which they wish to work.
+
+## 2023-09-07
+
+### Changed
+
+- **Proxmox VE Host Backup**
+  - NEW Script
+
+## 2023-09-06
+
+### Changed
+
+- **Proxmox VE LXC Cleaner**
+  - Added a new menu that allows you to choose which containers you want to exclude from the clean process.
+- **Tailscale**
+  - Added a menu that enables you to choose the specific container where you want to install Tailscale.
+
+## 2023-09-05
+
+### Changed
+
+- **Proxmox VE LXC Updater**
+  - Added a new menu that allows you to choose which containers you want to exclude from the update process.
+
+## 2023-09-01
+
+### Changed
+
+- **TurnKey Media Server LXC**
+  - NEW Script
+
+## 2023-08-31
+
+### Changed
+
+- **TurnKey ZoneMinder LXC**
+  - NEW Script
+- **TurnKey OpenVPN LXC**
+  - NEW Script
+
+## 2023-08-30
+
+### Changed
+
+- **TurnKey**
+  - Introducing a **NEW** Category on the Site.
+  - My intention is to maintain the TurnKey scripts in their simplest form, contained within a single file, and with minimal options, if any.
+- **TurnKey Core LXC**
+  - NEW Script
+- **TurnKey File Server LXC**
+  - NEW Script
+- **TurnKey Gitea LXC**
+  - NEW Script
+- **TurnKey GitLab LXC**
+  - NEW Script
+- **TurnKey Nextcloud LXC**
+  - NEW Script
+- **TurnKey Observium LXC**
+  - NEW Script
+- **TurnKey ownCloud LXC**
+  - NEW Script
+- **TurnKey Torrent Server LXC**
+  - NEW Script
+- **TurnKey Wordpress LXC**
+  - NEW Script
+
+## 2023-08-24
+
+### Changed
+
+- **qBittorrent LXC**
+  - Added back to repository with UPnP disabled and password changed.
+
+## 2023-08-24
+
+### Changed
+
+- **qBittorrent LXC**
+  - Removed from this repository for potential malicious hidden code https://github.com/tteck/Proxmox/discussions/1725
+
+## 2023-08-16
+
+### Changed
+
+- **Homarr LXC**
+  - NEW Script
+
+## 2023-08-10
+
+### Changed
+
+- **Proxmox VE Processor Microcode**
+  - AMD microcode-20230808 Release
+
+## 2023-08-09
+
+### Changed
+
+- **Omada Controller LXC**
+  - Update via script
+- **Proxmox VE Processor Microcode**
+  - [Intel microcode-20230808 Release](https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/releases/tag/microcode-20230808)
+
+## 2023-08-01
+
+### Changed
+
+- **Overseerr LXC**
+  - NEW Script
+- **Jellyseerr LXC**
+  - NEW Script
+
+## 2023-07-24
+
+### Changed
+
+- **Ombi LXC**
+  - NEW Script
+
+## 2023-07-23
+
+### Changed
+
+- **Zoraxy LXC**
+  - NEW Script
+
+## 2023-07-18
+
+### Changed
+
+- **Proxmox VE Cron LXC Updater**
+  - NEW Script
+
+## 2023-07-11
+
+### Changed
+
+- **Scrypted LXC**
+  - Add VAAPI hardware transcoding
+
+## 2023-07-07
+
+### Changed
+
+- **Real-Debrid Torrent Client LXC**
+  - NEW Script
+
+## 2023-07-05
+
+### Changed
+
+- There have been more than 110 commits since June 18th, although not all of them are significant, with a majority focused on ensuring compatibility with Proxmox VE 8 and Debian 12.
+
+## 2023-06-18
+
+### Changed
+
+- **OpenObserve LXC**
+  - NEW Script
 
 ## 2023-06-17
 

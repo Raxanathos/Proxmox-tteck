@@ -1,20 +1,12 @@
 #!/usr/bin/env bash
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
 
-clear
-while true; do
-  read -p "Install the latest Processor Microcode (y/n)?" yn
-  case $yn in
-  [Yy]*) break ;;
-  [Nn]*) exit ;;
-  *) echo "Please answer yes or no." ;;
-  esac
-done
-clear
-cat <<"EOF"
+function header_info {
+  clear
+  cat <<"EOF"
     ____                                               __  ____                                __
    / __ \_________  ________  ______________  _____   /  |/  (_)_____________  _________  ____/ /__
   / /_/ / ___/ __ \/ ___/ _ \/ ___/ ___/ __ \/ ___/  / /|_/ / / ___/ ___/ __ \/ ___/ __ \/ __  / _ \
@@ -22,6 +14,7 @@ cat <<"EOF"
 /_/   /_/   \____/\___/\___/____/____/\____/_/     /_/  /_/_/\___/_/   \____/\___/\____/\__,_/\___/
 
 EOF
+}
 
 RD=$(echo "\033[01;31m")
 YW=$(echo "\033[33m")
@@ -32,74 +25,99 @@ HOLD="-"
 CM="${GN}✓${CL}"
 CROSS="${RD}✗${CL}"
 
-set -euo pipefail
-shopt -s inherit_errexit nullglob
+msg_info() { echo -ne " ${HOLD} ${YW}$1..."; }
+msg_ok() { echo -e "${BFR} ${CM} ${GN}$1${CL}"; }
+msg_error() { echo -e "${BFR} ${CROSS} ${RD}$1${CL}"; }
 
-msg_info() {
-  local msg="$1"
-  echo -ne " ${HOLD} ${YW}${msg}..."
-}
-
-msg_ok() {
-  local msg="$1"
-  echo -e "${BFR} ${CM} ${GN}${msg}${CL}"
-}
-
-msg_error() {
-  local msg="$1"
-  echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
-}
+header_info
+current_microcode=$(journalctl -k | grep -oP "microcode: updated early: [^ ]+ -> \K[^,]+, date = [^ ]+" | head -n 1)
+[ -z "$current_microcode" ] && current_microcode="Not found."
 
 intel() {
-  msg_info "Installing iucode-tool: a tool for updating Intel processor microcode"
-  apt-get install -y iucode-tool &>/dev/null
-  msg_ok "Installed iucode-tool"
-  
-  msg_info "Downloading the latest Intel Processor Microcode Package for Linux"
-  wget -q http://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode/intel-microcode_3.20230512.1_amd64.deb
-  msg_ok "Downloaded the latest Intel Processor Microcode Package"
+  if ! dpkg -s iucode-tool >/dev/null 2>&1; then
+    msg_info "Installing iucode-tool (Intel microcode updater)"
+    apt-get install -y iucode-tool &>/dev/null
+    msg_ok "Installed iucode-tool"
+  else
+    msg_ok "Intel iucode-tool is already installed"
+    sleep 1
+  fi
 
-  msg_info "Installing the Intel Processor Microcode (Patience)"
-  dpkg -i intel-microcode_3.20230512.1_amd64.deb &>/dev/null
-  msg_ok "Installed the Intel Processor Microcode"
+  intel_microcode=$(curl -fsSL "https://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode//" | grep -o 'href="[^"]*amd64.deb"' | sed 's/href="//;s/"//')
+  [ -z "$intel_microcode" ] && { whiptail --backtitle "Proxmox VE Helper Scripts" --title "No Microcode Found" --msgbox "It appears there were no microcode packages found\n Try again later." 10 68; msg_info "Exiting"; sleep 1; msg_ok "Done"; exit; }
+
+  MICROCODE_MENU=()
+  MSG_MAX_LENGTH=0
+
+  while read -r TAG ITEM; do
+    OFFSET=2
+    (( ${#ITEM} + OFFSET > MSG_MAX_LENGTH )) && MSG_MAX_LENGTH=${#ITEM}+OFFSET
+    MICROCODE_MENU+=("$TAG" "$ITEM " "OFF")
+  done < <(echo "$intel_microcode")
+
+  microcode=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "Current Microcode revision:${current_microcode}" --radiolist "\nSelect a microcode package to install:\n" 16 $((MSG_MAX_LENGTH + 58)) 6 "${MICROCODE_MENU[@]}" 3>&1 1>&2 2>&3 | tr -d '"') || exit
+
+  [ -z "$microcode" ] && { whiptail --backtitle "Proxmox VE Helper Scripts" --title "No Microcode Selected" --msgbox "It appears that no microcode packages were selected" 10 68; msg_info "Exiting"; sleep 1; msg_ok "Done"; exit; }
+
+  msg_info "Downloading the Intel Processor Microcode Package $microcode"
+  wget -q http://ftp.debian.org/debian/pool/non-free-firmware/i/intel-microcode/$microcode
+  msg_ok "Downloaded the Intel Processor Microcode Package $microcode"
+
+  msg_info "Installing $microcode (Patience)"
+  dpkg -i $microcode &>/dev/null
+  msg_ok "Installed $microcode"
 
   msg_info "Cleaning up"
-  rm intel-microcode_3.20230512.1_amd64.deb
+  rm $microcode
   msg_ok "Cleaned"
-  
-  echo -e "\n To apply the changes, the system will need to be rebooted.\n"
+  echo -e "\nIn order to apply the changes, a system reboot will be necessary.\n"
 }
 
 amd() {
-  msg_info "Downloading the latest AMD Processor Microcode Package for Linux"
-  wget -q http://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode/amd64-microcode_3.20230414.1_amd64.deb
-  msg_ok "Downloaded the latest AMD Processor Microcode Package"
+  amd_microcode=$(curl -fsSL "https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode///" | grep -o 'href="[^"]*amd64.deb"' | sed 's/href="//;s/"//')
 
-  msg_info "Installing the AMD Processor Microcode (Patience)"
-  dpkg -i amd64-microcode_3.20230414.1_amd64.deb &>/dev/null
-  msg_ok "Installed the AMD Processor Microcode"
+  [ -z "$amd_microcode" ] && { whiptail --backtitle "Proxmox VE Helper Scripts" --title "No Microcode Found" --msgbox "It appears there were no microcode packages found\n Try again later." 10 68; msg_info "Exiting"; sleep 1; msg_ok "Done"; exit; }
+
+  MICROCODE_MENU=()
+  MSG_MAX_LENGTH=0
+
+  while read -r TAG ITEM; do
+    OFFSET=2
+    (( ${#ITEM} + OFFSET > MSG_MAX_LENGTH )) && MSG_MAX_LENGTH=${#ITEM}+OFFSET
+    MICROCODE_MENU+=("$TAG" "$ITEM " "OFF")
+  done < <(echo "$amd_microcode")
+
+  microcode=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "Current Microcode revision:${current_microcode}" --radiolist "\nSelect a microcode package to install:\n" 16 $((MSG_MAX_LENGTH + 58)) 6 "${MICROCODE_MENU[@]}" 3>&1 1>&2 2>&3 | tr -d '"') || exit
+
+  [ -z "$microcode" ] && { whiptail --backtitle "Proxmox VE Helper Scripts" --title "No Microcode Selected" --msgbox "It appears that no microcode packages were selected" 10 68; msg_info "Exiting"; sleep 1; msg_ok "Done"; exit; }
+
+  msg_info "Downloading the AMD Processor Microcode Package $microcode"
+  wget -q https://ftp.debian.org/debian/pool/non-free-firmware/a/amd64-microcode/$microcode
+  msg_ok "Downloaded the AMD Processor Microcode Package $microcode"
+
+  msg_info "Installing $microcode (Patience)"
+  dpkg -i $microcode &>/dev/null
+  msg_ok "Installed $microcode"
 
   msg_info "Cleaning up"
-  rm amd64-microcode_3.20230414.1_amd64.deb
+  rm $microcode
   msg_ok "Cleaned"
-  
-  echo -e "\n To apply the changes, the system will need to be rebooted.\n"
+  echo -e "\nIn order to apply the changes, a system reboot will be necessary.\n"
 }
 
-if [ $(pveversion | grep -c "pve-manager/7\.[0-9]") -eq 0 ]; then
-  echo -e "${CROSS} Proxmox Virtual Environment Not Detected"
-  echo -e "Exiting..."
-  sleep 2
-  exit
-fi
+if ! command -v pveversion >/dev/null 2>&1; then header_info; msg_error "No PVE Detected!"; exit; fi
+
+whiptail --backtitle "Proxmox VE Helper Scripts" --title "Proxmox VE Processor Microcode" --yesno "This will check for CPU microcode packages with the option to install. Proceed?" 10 58 || exit
 
 msg_info "Checking CPU Vendor"
-cpu=$(lscpu | grep -oP 'Vendor ID:\s*\K\S+')
+cpu=$(lscpu | grep -oP 'Vendor ID:\s*\K\S+' | head -n 1)
 if [ "$cpu" == "GenuineIntel" ]; then
   msg_ok "${cpu} was detected"
+  sleep 1
   intel
 elif [ "$cpu" == "AuthenticAMD" ]; then
   msg_ok "${cpu} was detected"
+  sleep 1
   amd
 else
   msg_error "${cpu} is not supported"

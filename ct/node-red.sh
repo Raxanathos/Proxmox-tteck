@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source <(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/build.func)
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -23,7 +23,7 @@ var_disk="4"
 var_cpu="1"
 var_ram="1024"
 var_os="debian"
-var_version="11"
+var_version="12"
 variables
 color
 catch_errors
@@ -39,6 +39,8 @@ function default_settings() {
   BRG="vmbr0"
   NET="dhcp"
   GATE=""
+  APT_CACHER=""
+  APT_CACHER_IP=""
   DISABLEIP6="no"
   MTU=""
   SD=""
@@ -52,12 +54,19 @@ function default_settings() {
 
 function update_script() {
 if [[ ! -d /root/.node-red ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-UPD=$(whiptail --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select" 11 58 2 \
+UPD=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select" 11 58 2 \
   "1" "Update ${APP}" ON \
   "2" "Install Themes" OFF \
   3>&1 1>&2 2>&3)
 header_info
 if [ "$UPD" == "1" ]; then
+  if [[ "$(node -v | cut -d 'v' -f 2)" == "18."* ]]; then
+    if ! command -v npm >/dev/null 2>&1; then
+      msg_info "Installing NPM"
+      apt-get install -y npm >/dev/null 2>&1
+      msg_ok "Installed NPM"
+    fi
+  fi
 msg_info "Stopping ${APP}"
 systemctl stop nodered
 msg_ok "Stopped ${APP}"
@@ -73,25 +82,40 @@ msg_ok "Update Successful"
 exit
 fi
 if [ "$UPD" == "2" ]; then
-THEME=$(whiptail --title "NODE-RED THEMES" --radiolist --cancel-button Exit-Script "Choose Theme" 15 58 6 \
+THEME=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "NODE-RED THEMES" --radiolist --cancel-button Exit-Script "Choose Theme" 15 58 6 \
+    "aurora" "" OFF \
+    "cobalt2" "" OFF \
     "dark" "" OFF \
     "dracula" "" OFF \
+    "espresso-libre" "" OFF \
+    "github-dark" "" OFF \
+    "github-dark-default" "" OFF \
+    "github-dark-dimmed" "" OFF \
     "midnight-red" "" ON \
+    "monoindustrial" "" OFF \
+    "monokai" "" OFF \
+    "monokai-dimmed" "" OFF \
+    "noctis" "" OFF \
+    "oceanic-next" "" OFF \
     "oled" "" OFF \
+    "one-dark-pro" "" OFF \
+    "one-dark-pro-darker" "" OFF \
     "solarized-dark" "" OFF \
     "solarized-light" "" OFF \
+    "tokyo-night" "" OFF \
+    "tokyo-night-light" "" OFF \
+    "tokyo-night-storm" "" OFF \
+    "totallyinformation" "" OFF \
+    "zenburn" "" OFF \
     3>&1 1>&2 2>&3)
 header_info
 msg_info "Installing ${THEME} Theme"    
 cd /root/.node-red
-sed -i 's|//theme: "",|theme: "",|g' /root/.node-red/settings.js
-npm install @node-red-contrib-themes/${THEME} &>/dev/null
+sed -i 's|// theme: ".*",|theme: "",|g' /root/.node-red/settings.js
+npm install @node-red-contrib-themes/theme-collection &>/dev/null
 sed -i "{s/theme: ".*"/theme: '${THEME}',/g}" /root/.node-red/settings.js
-msg_ok "Installed ${THEME} Theme"
-
-msg_info "Restarting ${APP}"
 systemctl restart nodered
-msg_ok "Restarted ${APP}"
+msg_ok "Installed ${THEME} Theme"
 exit
 fi
 }

@@ -18,7 +18,6 @@ color() {
 # This function enables IPv6 if it's not disabled and sets verbose mode if the global variable is set to "yes"
 verb_ip6() {
   if [ "$VERBOSE" = "yes" ]; then
-    set -x
     STD=""
   else STD="silent"; fi
   silent() { "$@" >/dev/null 2>&1; }
@@ -36,6 +35,8 @@ catch_errors() {
 
 # This function handles errors
 error_handler() {
+  if [ -n "$SPINNER_PID" ] && ps -p $SPINNER_PID > /dev/null; then kill $SPINNER_PID > /dev/null; fi
+  printf "\e[?25h"
   local exit_code="$?"
   local line_number="$1"
   local command="$2"
@@ -46,20 +47,38 @@ error_handler() {
   fi
 }
 
-# This function prints an informational message
-msg_info() {
-  local msg="$1"
-  echo -ne " ${HOLD} ${YW}${msg}..."
+# This function displays a spinner.
+spinner() {
+  printf "\e[?25l"
+  spinner="/-\\|/-\\|"
+  spin_i=0
+  while true; do
+    printf "\b%s" "${spinner:spin_i++%${#spinner}:1}"
+    sleep 0.1
+  done
 }
 
-# This function prints a success message
+# This function displays an informational message with a yellow color.
+msg_info() {
+  local msg="$1"
+  echo -ne " ${HOLD} ${YW}${msg}   "
+  spinner &
+  SPINNER_PID=$!
+}
+
+
+# This function displays a success message with a green color.
 msg_ok() {
+  if [ -n "$SPINNER_PID" ] && ps -p $SPINNER_PID > /dev/null; then kill $SPINNER_PID > /dev/null; fi
+  printf "\e[?25h"
   local msg="$1"
   echo -e "${BFR} ${CM} ${GN}${msg}${CL}"
 }
 
-# This function prints an error message
+# This function displays a error message with a red color.
 msg_error() {
+  if [ -n "$SPINNER_PID" ] && ps -p $SPINNER_PID > /dev/null; then kill $SPINNER_PID > /dev/null; fi
+  printf "\e[?25h"
   local msg="$1"
   echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
 }
@@ -83,6 +102,8 @@ setting_up_container() {
     echo -e " 🖧  Check Network Settings"
     exit 1
   fi
+  rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED
+  systemctl disable -q --now systemd-networkd-wait-online.service
   msg_ok "Set up Container OS"
   msg_ok "Network Connected: ${BL}$(hostname -I)"
 }
@@ -110,8 +131,11 @@ network_check() {
 # This function updates the Container OS by running apt-get update and upgrade
 update_os() {
   msg_info "Updating Container OS"
+  if [[ "$CACHER" == "yes" ]]; then
+    echo "Acquire::http { Proxy \"http://${CACHER_IP}:3142\"; };" >/etc/apt/apt.conf.d/00aptproxy
+  fi
   $STD apt-get update
-  $STD apt-get -y upgrade
+  $STD apt-get -o Dpkg::Options::="--force-confold" -y dist-upgrade
   msg_ok "Updated Container OS"
 }
 
@@ -124,24 +148,23 @@ motd_ssh() {
     sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config
     systemctl restart sshd
   fi
-  if [[ "$PCT_OSVERSION" == "12" ]]; then
-    $STD systemctl disable systemd-networkd-wait-online.service
-  fi
 }
 
 # This function customizes the container by modifying the getty service and enabling auto-login for the root user
 customize() {
   if [[ "$PASSWORD" == "" ]]; then
-  msg_info "Customizing Container"
-  GETTY_OVERRIDE="/etc/systemd/system/container-getty@1.service.d/override.conf"
-  mkdir -p $(dirname $GETTY_OVERRIDE)
-  cat <<EOF >$GETTY_OVERRIDE
+    msg_info "Customizing Container"
+    GETTY_OVERRIDE="/etc/systemd/system/container-getty@1.service.d/override.conf"
+    mkdir -p $(dirname $GETTY_OVERRIDE)
+    cat <<EOF >$GETTY_OVERRIDE
   [Service]
   ExecStart=
   ExecStart=-/sbin/agetty --autologin root --noclear --keep-baud tty%I 115200,38400,9600 \$TERM
 EOF
-  systemctl daemon-reload
-  systemctl restart $(basename $(dirname $GETTY_OVERRIDE) | sed 's/\.d//')
-  msg_ok "Customized Container"
+    systemctl daemon-reload
+    systemctl restart $(basename $(dirname $GETTY_OVERRIDE) | sed 's/\.d//')
+    msg_ok "Customized Container"
   fi
+  echo "bash -c \"\$(wget -qLO - https://github.com/tteck/Proxmox/raw/main/ct/${app}.sh)\"" >/usr/bin/update
+  chmod +x /usr/bin/update
 }

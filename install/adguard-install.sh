@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -20,13 +20,32 @@ $STD apt-get install -y mc
 msg_ok "Installed Dependencies"
 
 msg_info "Installing AdGuard Home"
-systemctl stop systemd-resolved
-echo "DNSStubListener=no" >>/etc/systemd/resolved.conf
-ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-wget -qL https://raw.githubusercontent.com/AdguardTeam/AdGuardHome/master/scripts/install.sh
-$STD bash install.sh
-rm install.sh
+$STD tar zxvf <(curl -fsSL https://static.adtidy.org/adguardhome/release/AdGuardHome_linux_amd64.tar.gz) -C /opt
 msg_ok "Installed AdGuard Home"
+
+msg_info "Creating Service"
+cat <<EOF >/etc/systemd/system/AdGuardHome.service
+[Unit]
+Description=AdGuard Home: Network-level blocker
+ConditionFileIsExecutable=/opt/AdGuardHome/AdGuardHome
+After=syslog.target network-online.target
+
+[Service]
+StartLimitInterval=5
+StartLimitBurst=10
+ExecStart=/opt/AdGuardHome/AdGuardHome "-s" "run"
+WorkingDirectory=/opt/AdGuardHome
+StandardOutput=file:/var/log/AdGuardHome.out
+StandardError=file:/var/log/AdGuardHome.err
+Restart=always
+RestartSec=10
+EnvironmentFile=-/etc/sysconfig/AdGuardHome
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable -q --now AdGuardHome.service
+msg_ok "Created Service"
 
 motd_ssh
 customize

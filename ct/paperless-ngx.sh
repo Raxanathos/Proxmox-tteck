@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source <(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/build.func)
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -20,11 +20,11 @@ EOF
 header_info
 echo -e "Loading..."
 APP="Paperless-ngx"
-var_disk="8"
+var_disk="10"
 var_cpu="2"
 var_ram="2048"
 var_os="debian"
-var_version="11"
+var_version="12"
 variables
 color
 catch_errors
@@ -40,6 +40,8 @@ function default_settings() {
   BRG="vmbr0"
   NET="dhcp"
   GATE=""
+  APT_CACHER=""
+  APT_CACHER_IP=""
   DISABLEIP6="no"
   MTU=""
   SD=""
@@ -59,7 +61,7 @@ function update_script() {
   RELEASE=$(curl -s https://api.github.com/repos/paperless-ngx/paperless-ngx/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
   SER=/etc/systemd/system/paperless-task-queue.service
 
-  UPD=$(whiptail --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select" 11 58 2 \
+  UPD=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select" 11 58 2 \
     "1" "Update Paperless-ngx to $RELEASE" ON \
     "2" "Paperless-ngx Credentials" OFF \
     3>&1 1>&2 2>&3)
@@ -74,13 +76,13 @@ function update_script() {
     msg_ok "Stopped Paperless-ngx"
 
     msg_info "Updating to ${RELEASE}"
+    cd ~
     if [ "$(dpkg -l | awk '/libmariadb-dev-compat/ {print }' | wc -l)" != 1 ]; then apt-get install -y libmariadb-dev-compat; fi &>/dev/null
     wget https://github.com/paperless-ngx/paperless-ngx/releases/download/$RELEASE/paperless-ngx-$RELEASE.tar.xz &>/dev/null
     tar -xf paperless-ngx-$RELEASE.tar.xz &>/dev/null
     cp -r /opt/paperless/paperless.conf paperless-ngx/
     cp -r paperless-ngx/* /opt/paperless/
     cd /opt/paperless
-    sed -i -e 's|-e git+https://github.com/paperless-ngx/django-q.git|git+https://github.com/paperless-ngx/django-q.git|' /opt/paperless/requirements.txt
     pip install -r requirements.txt &>/dev/null
     cd /opt/paperless/src
     /usr/bin/python3 manage.py migrate &>/dev/null

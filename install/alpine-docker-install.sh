@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -39,7 +39,7 @@ if [[ "${prompt,,}" =~ ^(y|yes)$ ]]; then
   docker volume create portainer_data >/dev/null
  $STD docker run -d \
     -p 8000:8000 \
-    -p 9000:9000 \
+    -p 9443:9443 \
     --name=portainer \
     --restart=always \
     -v /var/run/docker.sock:/var/run/docker.sock \

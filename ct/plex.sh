@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source <(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/build.func)
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -39,6 +39,8 @@ function default_settings() {
   BRG="vmbr0"
   NET="dhcp"
   GATE=""
+  APT_CACHER=""
+  APT_CACHER_IP=""
   DISABLEIP6="no"
   MTU=""
   SD=""
@@ -52,7 +54,7 @@ function default_settings() {
 
 function update_script() {
 if [[ ! -f /etc/apt/sources.list.d/plexmediaserver.list ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-UPD=$(whiptail --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select \nplexupdate info >> https://github.com/mrworf/plexupdate" 10 59 2 \
+UPD=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "SUPPORT" --radiolist --cancel-button Exit-Script "Spacebar = Select \nplexupdate info >> https://github.com/mrworf/plexupdate" 10 59 2 \
   "1" "Update LXC" ON \
   "2" "Install plexupdate" OFF \
   3>&1 1>&2 2>&3)

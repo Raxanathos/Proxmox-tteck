@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -13,68 +13,54 @@ setting_up_container
 network_check
 update_os
 
-if [[ "$PCT_OSVERSION" == "12" ]]; then
-  msg_info "Installing Dependencies, Bookworm (Patience)"
+msg_info "Installing Dependencies, (Patience)"
+$STD apt-get install -y \
+  git \
+  curl \
+  sudo \
+  mc \
+  bluez \
+  libffi-dev \
+  libssl-dev \
+  libjpeg-dev \
+  zlib1g-dev \
+  autoconf \
+  build-essential \
+  libopenjp2-7 \
+  libturbojpeg0-dev \
+  ffmpeg \
+  liblapack3 \
+  liblapack-dev \
+  dbus-broker \
+  libpcap-dev \
+  libmariadb-dev-compat \
+  libatlas-base-dev
+msg_ok "Installed Dependencies"
+
+msg_info "Updating Python3"
+$STD apt-get install -y \
+  python3 \
+  python3-dev \
+  python3-pip \
+  python3-venv
+
+msg_ok "Updated Python3"
+
+if [[ "$PCT_OSVERSION" == "11" ]]; then
+  msg_info "Installing pyenv"
   $STD apt-get install -y \
-    git \
-    curl \
-    sudo \
-    mc \
-    python3 \
-    python3-dev \
-    python3-venv \
-    python3-pip \
-    bluez \
-    libffi-dev \
-    libssl-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    autoconf \
-    build-essential \
-    libopenjp2-7 \
-    libturbojpeg0-dev \
-    tzdata \
-    ffmpeg \
-    liblapack3 \
-    liblapack-dev \
-    libatlas-base-dev
-  msg_ok "Installed Dependencies"
-else
-  msg_info "Installing Dependencies, Bullseye (Patience)"
-  $STD apt-get install -y \
-    git \
-    curl \
-    sudo \
-    mc \
-    build-essential \
-    libssl-dev \
-    zlib1g-dev \
-    libbz2-dev \
-    libpcap-dev \
+    make \
     libreadline-dev \
     libsqlite3-dev \
+    libncurses5-dev \
     libncursesw5-dev \
     xz-utils \
     tk-dev \
     llvm \
+    libbz2-dev \
     libxml2-dev \
     libxmlsec1-dev \
-    libffi-dev \
-    liblzma-dev \
-    dbus-broker \
-    bluez \
-    libmariadb-dev-compat \
-    libjpeg-dev \
-    autoconf \
-    libopenjp2-7 \
-    libtiff5 \
-    libturbojpeg0-dev \
-    liblapack3 \
-    liblapack-dev \
-    libatlas-base-dev
-  msg_ok "Installed Dependencies"
-
-  msg_info "Installing pyenv"
+    liblzma-dev
   $STD git clone https://github.com/pyenv/pyenv.git ~/.pyenv
   set +e
   echo 'export PYENV_ROOT="$HOME/.pyenv"' >>~/.bashrc
@@ -82,6 +68,7 @@ else
   echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init --path)"\nfi' >>~/.bashrc
   msg_ok "Installed pyenv"
   . ~/.bashrc
+
   set -e
   msg_info "Installing Python 3.11.3 (Patience)"
   $STD pyenv install 3.11.3
@@ -97,6 +84,8 @@ source bin/activate
 $STD pip install --upgrade pip
 $STD python3 -m pip install wheel
 $STD pip install homeassistant
+$STD pip install mysqlclient
+$STD pip install psycopg2-binary
 mkdir -p /root/.homeassistant
 msg_ok "Installed Home Assistant-Core"
 

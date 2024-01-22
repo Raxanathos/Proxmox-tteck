@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -35,6 +35,7 @@ while true; do
   for instance in $(pct list | awk '\''{if(NR>1) print $1}'\''; qm list | awk '\''{if(NR>1) print $1}'\''); do
     # Skip excluded instances
     if [[ " ${excluded_instances[@]} " =~ " ${instance} " ]]; then
+      echo "Skipping $instance because it is excluded"
       continue
     fi
 
@@ -50,7 +51,7 @@ while true; do
     fi
 
     # Skip instances based on onboot and templates
-    onboot=$($config_cmd $instance | grep onboot | grep -q "onboot: 0" && echo "true" || echo "false")
+    onboot=$($config_cmd $instance | grep -q "onboot: 0" || ( ! $config_cmd $instance | grep -q "onboot" ) && echo "true" || echo "false")
     template=$($config_cmd $instance | grep template | grep -q "template:" && echo "true" || echo "false")
 
     if [ "$onboot" == "true" ]; then
@@ -73,12 +74,13 @@ while true; do
       else
         # It is a virtual machine
         if qm status $instance | grep -q "status: running"; then
-          echo "$(date): VM $instance is not responding, resetting..."
-          qm reset $instance >/dev/null 2>&1
+          echo "$(date): VM $instance is not responding, restarting..."
+          qm stop $instance >/dev/null 2>&1
+          sleep 5
         else
-          qm start $instance >/dev/null 2>&1
           echo "$(date): VM $instance is not running, starting..."
         fi
+        qm start $instance >/dev/null 2>&1
       fi
     fi
   done
@@ -86,41 +88,55 @@ while true; do
   # Wait for 5 minutes. (Edit to your needs)
   echo "$(date): Pausing for 5 minutes..."
   sleep 300
-done >> /var/log/ping-instances.log 2>&1' >/usr/local/bin/ping-instances.sh
-
+done >/var/log/ping-instances.log 2>&1' >/usr/local/bin/ping-instances.sh
+touch /var/log/ping-instances.log
 # Change file permissions to executable
 chmod +x /usr/local/bin/ping-instances.sh
+cat <<EOF >/etc/systemd/system/ping-instances.timer
+[Unit]
+Description=Delay ping-instances.service by 5 minutes
+
+[Timer]
+OnBootSec=300
+OnUnitActiveSec=300
+
+[Install]
+WantedBy=timers.target
+EOF
 
 # Create ping-instances.service
-echo '[Unit]
+cat <<EOF >/etc/systemd/system/ping-instances.service
+[Unit]
 Description=Ping instances every 5 minutes and restarts if necessary
-
+After=ping-instances.timer
+Requires=ping-instances.timer
 [Service]
 Type=simple
 # To specify which CT/VM should be excluded, add the CT/VM ID at the end of the line where ExecStart=/usr/local/bin/ping-instances.sh is specified.
 # For example: ExecStart=/usr/local/bin/ping-instances.sh 100 102
 # Virtual machines without the QEMU guest agent installed must be excluded.
+
 ExecStart=/usr/local/bin/ping-instances.sh
 Restart=always
 StandardOutput=file:/var/log/ping-instances.log
 StandardError=file:/var/log/ping-instances.log
 
 [Install]
-WantedBy=multi-user.target' >/etc/systemd/system/ping-instances.service
+WantedBy=multi-user.target
+EOF
 
 # Reload daemon, enable and start ping-instances.service
 systemctl daemon-reload
+systemctl enable -q --now ping-instances.timer
 systemctl enable -q --now ping-instances.service
 clear
 echo -e "\n To view Monitor All logs: cat /var/log/ping-instances.log"
 }
 
 remove() {
-  systemctl stop ping-instances.service
-  systemctl disable ping-instances.service &>/dev/null
-  rm /etc/systemd/system/ping-instances.service
-  rm /usr/local/bin/ping-instances.sh
-  rm /var/log/ping-instances.log
+  systemctl disable -q --now ping-instances.timer
+  systemctl disable -q --now ping-instances.service
+  rm /etc/systemd/system/ping-instances.service /etc/systemd/system/ping-instances.timer /usr/local/bin/ping-instances.sh /var/log/ping-instances.log
   echo "Removed Monitor All from Proxmox VE"
 }
 
@@ -129,7 +145,7 @@ OPTIONS=(Add "Add Monitor-All to Proxmox VE" \
          Remove "Remove Monitor-All from Proxmox VE")
 
 # Show the whiptail menu and save the user's choice
-CHOICE=$(whiptail --title "Monitor-All for Proxmox VE" --menu "Select an option:" 10 58 2 \
+CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "Monitor-All for Proxmox VE" --menu "Select an option:" 10 58 2 \
           "${OPTIONS[@]}" 3>&1 1>&2 2>&3)
 
 # Check the user's choice and perform the corresponding action

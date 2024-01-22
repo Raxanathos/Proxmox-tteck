@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -23,6 +23,8 @@ msg_info "Installing MariaDB"
 $STD bash <(curl -fsSL https://r.mariadb.com/downloads/mariadb_repo_setup)
 $STD apt-get update
 $STD apt-get install -y mariadb-server
+sed -i 's/^# *\(port *=.*\)/\1/' /etc/mysql/my.cnf
+sed -i 's/^bind-address/#bind-address/g' /etc/mysql/mariadb.conf.d/50-server.cnf
 msg_ok "Installed MariaDB"
 
 read -r -p "Would you like to add Adminer? <y/N> " prompt

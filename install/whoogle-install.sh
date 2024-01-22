@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright (c) 2021-2023 tteck
+# Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # License: MIT
 # https://github.com/tteck/Proxmox/raw/main/LICENSE
@@ -19,9 +19,12 @@ $STD apt-get install -y sudo
 $STD apt-get install -y mc
 msg_ok "Installed Dependencies"
 
-msg_info "Installing Python3-pip"
-$STD apt-get install -y python3-pip
-msg_ok "Installed Python3-pip"
+msg_info "Updating Python3"
+$STD apt-get install -y \
+  python3 \
+  python3-dev \
+  python3-pip
+msg_ok "Updated Python3"
 
 msg_info "Installing Whoogle"
 $STD pip install brotli
