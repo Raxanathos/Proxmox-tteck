@@ -8,21 +8,20 @@ source <(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/build
 function header_info {
 clear
 cat <<"EOF"
-    __  __                      __  ______  ____
-   / / / /_  ______  ___  _____/ / / / __ \/ __ \
-  / /_/ / / / / __ \/ _ \/ ___/ /_/ / / / / /_/ /
- / __  / /_/ / /_/ /  __/ /  / __  / /_/ / _, _/
-/_/ /_/\__, / .___/\___/_/  /_/ /_/_____/_/ |_|
-      /____/_/
-
+    ____        _      ____
+   / __ \____ _(_)____/ __ \_________  ____
+  / /_/ / __ `/ / ___/ / / / ___/ __ \/ __ \
+ / ____/ /_/ / / /  / /_/ / /  / /_/ / /_/ /
+/_/    \__,_/_/_/  /_____/_/   \____/ .___/
+                                   /_/
 EOF
 }
 header_info
 echo -e "Loading..."
-APP="HyperHDR"
+APP="PairDrop"
 var_disk="4"
-var_cpu="2"
-var_ram="2048"
+var_cpu="1"
+var_ram="512"
 var_os="debian"
 var_version="12"
 variables
@@ -30,7 +29,7 @@ color
 catch_errors
 
 function default_settings() {
-  CT_TYPE="0"
+  CT_TYPE="1"
   PW=""
   CT_ID=$NEXTID
   HN=$NSAPP
@@ -55,11 +54,14 @@ function default_settings() {
 
 function update_script() {
 header_info
-if [[ ! -d /var ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_info "Updating $APP LXC"
-apt-get update &>/dev/null
-apt-get -y upgrade &>/dev/null
-msg_ok "Updated $APP LXC"
+if [[ ! -d /opt/pairdrop ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
+msg_info "Updating $APP"
+systemctl stop pairdrop
+cd /opt/pairdrop
+git pull
+npm install
+systemctl start pairdrop
+msg_ok "Updated $APP"
 exit
 }
 
@@ -69,4 +71,4 @@ description
 
 msg_ok "Completed Successfully!\n"
 echo -e "${APP} should be reachable by going to the following URL.
-         ${BL}http://${IP}:8090${CL} \n"
+         ${BL}http://${IP}:3000${CL} \n"
