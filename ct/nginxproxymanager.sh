@@ -21,7 +21,7 @@ header_info
 echo -e "Loading..."
 APP="Nginx Proxy Manager"
 var_disk="4"
-var_cpu="1"
+var_cpu="2"
 var_ram="1024"
 var_os="debian"
 var_version="12"
@@ -58,6 +58,12 @@ function update_script() {
   if [[ ! -f /lib/systemd/system/npm.service ]]; then
     msg_error "No ${APP} Installation Found!"
     exit
+  fi
+  if ! command -v pnpm &> /dev/null; then  
+    msg_info "Installing pnpm"
+    export NODE_OPTIONS=--openssl-legacy-provider
+    npm install -g pnpm@8.15 &>/dev/null
+    msg_ok "Installed pnpm"
   fi
   RELEASE=$(curl -s https://api.github.com/repos/NginxProxyManager/nginx-proxy-manager/releases/latest |
     grep "tag_name" |
@@ -122,7 +128,6 @@ function update_script() {
   chown root /tmp/nginx
   echo resolver "$(awk 'BEGIN{ORS=" "} $1=="nameserver" {print ($2 ~ ":")? "["$2"]": $2}' /etc/resolv.conf);" >/etc/nginx/conf.d/include/resolvers.conf
   if [ ! -f /data/nginx/dummycert.pem ] || [ ! -f /data/nginx/dummykey.pem ]; then
-    echo -e "${CHECKMARK} \e[1;92m Generating dummy SSL Certificate... \e[0m"
     openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 -subj "/O=Nginx Proxy Manager/OU=Dummy Certificate/CN=localhost" -keyout /data/nginx/dummykey.pem -out /data/nginx/dummycert.pem &>/dev/null
   fi
   mkdir -p /app/global /app/frontend/images
@@ -131,12 +136,6 @@ function update_script() {
   python3 -m pip install --no-cache-dir certbot-dns-cloudflare &>/dev/null
   msg_ok "Setup Enviroment"
 
-  if ! command -v pnpm &> /dev/null; then  
-    msg_info "Installing pnpm"
-    npm install -g pnpm &>/dev/null
-    msg_ok "Installed pnpm"
-  fi
-  
   msg_info "Building Frontend"
   cd ./frontend
   pnpm install &>/dev/null
@@ -186,6 +185,9 @@ start
 build_container
 description
 
+msg_info "Setting Container to Normal Resources"
+pct set $CTID -cores 1
+msg_ok "Set Container to Normal Resources"
 msg_ok "Completed Successfully!\n"
 echo -e "${APP} should be reachable by going to the following URL.
          ${BL}http://${IP}:81${CL}\n"

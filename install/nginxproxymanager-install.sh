@@ -39,8 +39,7 @@ $STD apt-get install -y \
   python3-cffi \
   python3-certbot \
   python3-certbot-dns-cloudflare
-$STD pip3 install certbot_dns_porkbun
-$STD pip3 install certbot-dns-duckdns
+$STD pip3 install certbot-dns-multi
 $STD python3 -m venv /opt/certbot/
 msg_ok "Installed Python Dependencies"
 
@@ -61,29 +60,39 @@ ln -sf /root/.nvm/versions/node/v16.20.2/bin/node /usr/bin/node
 msg_ok "Installed Node.js"
 
 msg_info "Installing pnpm"
-$STD npm install -g pnpm
+$STD npm install -g pnpm@8.15
 msg_ok "Installed pnpm"
 
 RELEASE=$(curl -s https://api.github.com/repos/NginxProxyManager/nginx-proxy-manager/releases/latest |
   grep "tag_name" |
   awk '{print substr($2, 3, length($2)-4) }')
 
-msg_info "Downloading Nginx Proxy Manager v${RELEASE}"
-wget -q https://codeload.github.com/NginxProxyManager/nginx-proxy-manager/tar.gz/v${RELEASE} -O - | tar -xz
-cd ./nginx-proxy-manager-${RELEASE}
-msg_ok "Downloaded Nginx Proxy Manager v${RELEASE}"
-
+read -r -p "Would you like to install an older version (v2.10.4)? <y/N> " prompt
+if [[ ${prompt,,} =~ ^(y|yes)$ ]]; then
+  msg_info "Downloading Nginx Proxy Manager v2.10.4"
+  wget -q https://codeload.github.com/NginxProxyManager/nginx-proxy-manager/tar.gz/v2.10.4 -O - | tar -xz
+  cd ./nginx-proxy-manager-2.10.4
+  msg_ok "Downloaded Nginx Proxy Manager v2.10.4"
+else
+  msg_info "Downloading Nginx Proxy Manager v${RELEASE}"
+  wget -q https://codeload.github.com/NginxProxyManager/nginx-proxy-manager/tar.gz/v${RELEASE} -O - | tar -xz
+  cd ./nginx-proxy-manager-${RELEASE}
+  msg_ok "Downloaded Nginx Proxy Manager v${RELEASE}"
+fi
 msg_info "Setting up Enviroment"
 ln -sf /usr/bin/python3 /usr/bin/python
 ln -sf /usr/bin/certbot /opt/certbot/bin/certbot
 ln -sf /usr/local/openresty/nginx/sbin/nginx /usr/sbin/nginx
 ln -sf /usr/local/openresty/nginx/ /etc/nginx
-
-sed -i "s|\"version\": \"0.0.0\"|\"version\": \"$RELEASE\"|" backend/package.json
-sed -i "s|\"version\": \"0.0.0\"|\"version\": \"$RELEASE\"|" frontend/package.json
+if [[ ${prompt,,} =~ ^(y|yes)$ ]]; then
+  sed -i "s|\"version\": \"0.0.0\"|\"version\": \"2.10.4\"|" backend/package.json
+  sed -i "s|\"version\": \"0.0.0\"|\"version\": \"2.10.4\"|" frontend/package.json
+else
+  sed -i "s|\"version\": \"0.0.0\"|\"version\": \"$RELEASE\"|" backend/package.json
+  sed -i "s|\"version\": \"0.0.0\"|\"version\": \"$RELEASE\"|" frontend/package.json
+fi
 sed -i 's|"fork-me": ".*"|"fork-me": "Proxmox VE Helper-Scripts"|' frontend/js/i18n/messages.json
 sed -i "s|https://github.com.*source=nginx-proxy-manager|https://helper-scripts.com|g" frontend/js/app/ui/footer/main.ejs
-
 sed -i 's+^daemon+#daemon+g' docker/rootfs/etc/nginx/nginx.conf
 NGINX_CONFS=$(find "$(pwd)" -type f -name "*.conf")
 for NGINX_CONF in $NGINX_CONFS; do
