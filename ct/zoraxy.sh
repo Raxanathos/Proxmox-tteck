@@ -55,7 +55,18 @@ function default_settings() {
 function update_script() {
 header_info
 if [[ ! -d /opt/zoraxy/src ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_error "There is currently no update path available."
+msg_info "Updating $APP"
+systemctl stop zoraxy
+cd /opt/zoraxy/src
+systemctl stop zoraxy
+if git pull | grep -q 'Already up to date.'; then
+  msg_ok "Already up to date. No update required."
+else
+  go mod tidy
+  go build
+  msg_ok "Updated $APP"
+fi
+systemctl start zoraxy
 exit
 }
 
